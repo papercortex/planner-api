@@ -1,6 +1,8 @@
 tags:
 - name: users
   description: users API
+- name: dayplans
+  description: DayPlans API
 
 paths:
 # [GET] users
@@ -100,6 +102,95 @@ paths:
         500:
           description: 'Server Error'
 
+  # [GET] dayplans
+  /dayplans:
+    get:
+      tags:
+      - dayplans
+      summary: Find All DayPlans
+      responses:
+        200:
+          description: 'OK'
+        500:
+          description: 'Server Error'
+    post:
+      tags:
+      - dayplans
+      summary: Add DayPlan
+      parameters:
+      - name: body
+        in: body
+        description: DayPlan data
+        required: true
+        schema:
+          $ref: '#/definitions/DayPlan'
+      responses:
+        201:
+          description: 'Created'
+        400:
+          description: 'Bad Request'
+        500:
+          description: 'Server Error'
+
+  # [GET] dayplans/id
+  /dayplans/{id}:
+    get:
+      tags:
+      - dayplans
+      summary: Find DayPlan By Id
+      parameters:
+      - name: id
+        in: path
+        description: DayPlan Id
+        required: true
+      responses:
+        200:
+          description: 'OK'
+        404:
+          description: 'Not Found'
+        500:
+          description: 'Server Error'
+    put:
+      tags:
+      - dayplans
+      summary: Update DayPlan By Id
+      parameters:
+      - name: id
+        in: path
+        description: DayPlan Id
+        required: true
+      - name: body
+        in: body
+        description: DayPlan Data
+        required: true
+        schema:
+          $ref: '#/definitions/DayPlan'
+      responses:
+        200:
+          description: 'OK'
+        400:
+          description: 'Bad Request'
+        404:
+          description: 'Not Found'
+        500:
+          description: 'Server Error'
+    delete:
+      tags:
+      - dayplans
+      summary: Delete DayPlan By Id
+      parameters:
+      - name: id
+        in: path
+        description: DayPlan Id
+        required: true
+      responses:
+        200:
+          description: 'OK'
+        404:
+          description: 'Not Found'
+        500:
+          description: 'Server Error'
+
 # definitions
 definitions:
   users:
@@ -114,6 +205,59 @@ definitions:
       password:
         type: string
         description: user Password
+
+  DayPlan:
+    type: object
+    properties:
+      fullMonthName:
+        type: string
+        description: Full name of the month
+      monthDay:
+        type: number
+        description: Day of the month
+      goals:
+        type: array
+        items:
+          $ref: '#/definitions/Goal'
+      tasks:
+        type: array
+        items:
+          $ref: '#/definitions/Task'
+
+  Goal:
+    type: object
+    properties:
+      title:
+        type: string
+        description: Title of the goal
+      metadata:
+        type: object
+        description: Metadata for the goal
+
+  Task:
+    type: object
+    properties:
+      title:
+        type: string
+        description: Title of the task
+      checked:
+        type: boolean
+        description: Whether the task is checked off
+      fromHour:
+        type: number
+        description: Starting hour of the task
+      fromMin:
+        type: number
+        description: Starting minute of the task
+      toHour:
+        type: number
+        description: Ending hour of the task
+      toMin:
+        type: number
+        description: Ending minute of the task
+      metadata:
+        type: object
+        description: Metadata for the task
 
 schemes:
  - https

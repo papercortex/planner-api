@@ -1,0 +1,33 @@
+# baseURL
+@baseURL = http://localhost:3000
+
+###
+# Find All DayPlans
+GET {{ baseURL }}/dayplans
+
+###
+# Create DayPlan
+POST {{ baseURL }}/dayplans
+Content-Type: application/json
+
+{
+    "fullMonthName": "March",
+    "monthDay": 15,
+    "goals": [
+        {
+            "title": "Finish project documentation",
+            "metadata": {}
+        }
+    ],
+    "tasks": [
+        {
+            "title": "Write introduction section",
+            "checked": false,
+            "fromHour": 9,
+            "fromMin": 30,
+            "toHour": 10,
+            "toMin": 30,
+            "metadata": {}
+        }
+    ]
+}
