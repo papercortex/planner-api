@@ -4,7 +4,4 @@
 docker compose up mongo -d
 
 # Run mongo-gui
-mongo-gui &
-
-# Run the app
-npm run dev
+concurrently "mongo-gui" "npm run dev" "open http://localhost:3000/api-docs" "open http://localhost:4321"
