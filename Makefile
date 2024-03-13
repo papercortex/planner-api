@@ -1,46 +1,42 @@
-# app name should be overridden.
-# ex) production-stage: make build APP_NAME=<APP_NAME>
-# ex) development-stage: make build-dev APP_NAME=<APP_NAME>
+.PHONY: build deploy destroy load-infra-env download-logs
 
-SHELL := /bin/bash
+install:
+	@echo "Installing Planner Api..."
+	npm install
 
-APP_NAME = typescript-express
-APP_NAME := $(APP_NAME)
+dev:
+	@echo "Running Planner Api in development mode..."
+	docker compose up mongo -d
+	concurrently "mongo-gui" "npm run dev"
 
-.PHONY: help start clean db test
+build: install
+	@echo "Building Planner Api..."
+	@rm -rf tmp && mkdir -p tmp/planner-api-package
+	npm run build
+	@cp -R ./dist/ tmp/planner-api-package/dist/
+	@cp ./package.json tmp/planner-api-package/package.json
+	@cp ./package-lock.json tmp/planner-api-package/package-lock.json
+	cd tmp/planner-api-package && zip -r ../planner-api-$(PLANNER_ARTIFACT_VERSION).zip .
 
-help:
-	@grep -E '^[1-9a-zA-Z_-]+:.*?## .*$$|(^#--)' $(MAKEFILE_LIST) \
-	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m %-43s\033[0m %s\n", $$1, $$2}' \
-	| sed -e 's/\[32m #-- /[33m/'
+deploy: build
+	@echo "Deploying Planner Api..."
+	aws s3 cp tmp/planner-api-$(PLANNER_ARTIFACT_VERSION).zip s3://papercortex-prod-planner-api-artifacts/$(PLANNER_ARTIFACT_VERSION).zip
+	cd terraform && terraform init && terraform apply -var-file=./terraform.tfvars -var="artifact_version=$(PLANNER_ARTIFACT_VERSION)"
 
-#-- Docker
-up: ## Up the container images
-	docker-compose up -d
+destroy:
+	@echo "Destroying Planner Api Infrastructure..."
+	cd terraform && terraform destroy
 
-down: ## Down the container images
-	docker-compose down
+load-planner-api-env:
+	@echo "Loading Infrastructure Environment Variables..."
+	$(eval export EB_ENVIRONMENT_NAME=$(shell cd terraform && terraform output -raw eb_environment_name 2>/dev/null))
 
-build: ## Build the container image - Production
-	docker build -t ${APP_NAME}\
-		-f Dockerfile.prod .
-
-build-dev: ## Build the container image - Development
-	docker build -t ${APP_NAME}\
-		-f Dockerfile.dev .
-
-run: ## Run the container image
-	docker run -d -it -p 3000:3000 ${APP_NAME}
-
-pause: ## Pause the containers
-	docker container rm -f ${APP_NAME}
-
-clean: ## Clean the images
-	docker rmi -f ${APP_NAME}
-
-remove: ## Remove the volumes
-	docker volume rm -f ${APP_NAME}
-
-#-- Database
-db: ## Start the local database MongoDB
-	docker-compose up -d mongo
+download-logs: load-planner-api-env
+	@echo "Downloading logs for environment: $(EB_ENVIRONMENT_NAME)..."
+	@aws elasticbeanstalk request-environment-info --environment-name $(EB_ENVIRONMENT_NAME) --info-type tail
+	@sleep 10 # Wait for the log bundle to be ready
+	$(eval export LOG_URL := $(shell aws elasticbeanstalk retrieve-environment-info --environment-name $(EB_ENVIRONMENT_NAME) --info-type tail --query "EnvironmentInfo[0].Message" --output text))
+	@mkdir -p ./logs
+	@rm -f ./logs/$(EB_ENVIRONMENT_NAME)-logs.zip
+	curl -o ./logs/$(EB_ENVIRONMENT_NAME)-logs.zip "$(LOG_URL)"
+	@echo "Logs downloaded to ./logs/"

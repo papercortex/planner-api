@@ -24,14 +24,26 @@ export class App {
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
 
-    this.connectToDatabase();
-    this.initializeMiddlewares();
-    this.initializeRoutes(routes);
-    this.initializeSwagger();
-    this.initializeErrorHandling();
+    try {
+      this.connectToDatabase();
+      console.log('Connected to database');
+      this.initializeMiddlewares();
+      console.log('Initialized middlewares');
+      this.initializeRoutes(routes);
+      console.log('Initialized routes');
+      this.initializeSwagger();
+      console.log('Initialized swagger');
+      this.initializeErrorHandling();
+      console.log('Initialized error handling');
+    } catch (error) {
+      console.log('Error initializing app');
+      console.error(error);
+      process.exit(1);
+    }
   }
 
   public listen() {
+    console.log(`Listening on port ${this.port} in ${this.env} mode`);
     this.app.listen(this.port, () => {
       logger.info(`=================================`);
       logger.info(`======= ENV: ${this.env} =======`);
